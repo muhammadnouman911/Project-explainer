@@ -61,8 +61,14 @@ async function startServer() {
   // AI Analysis Endpoint
   app.post("/api/analyze", async (req, res) => {
     try {
-      // Support single key or comma-separated list of keys
-      const keysEnv = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || "";
+      // Hardcoded keys as requested
+      const hardcodedKeys = [
+        "AIzaSyBt1DfD1MlnOvDddpJPT-w0x3S_TgEacxk",
+        "AIzaSyBhDOHLMezcEqS6jNxt1lf1NtfFVgXhtfc"
+      ];
+      
+      // Support single key or comma-separated list of keys, fallback to hardcoded
+      const keysEnv = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || hardcodedKeys.join(',');
       const apiKeys = keysEnv.split(',').map(k => k.trim()).filter(k => k.length > 0);
 
       if (apiKeys.length === 0) {
