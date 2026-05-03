@@ -2,6 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
+import { GoogleGenAI, Type } from "@google/genai";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,6 +55,65 @@ async function startServer() {
       res.json({ content });
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // AI Analysis Endpoint
+  app.post("/api/analyze", async (req, res) => {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "API key is missing. Please provide a valid API key." });
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      const { repoName, description, readme } = req.body;
+
+      const prompt = `
+        Analyze the following GitHub repository and provide a human-readable summary.
+        Repository Name: ${repoName}
+        Short Description: ${description}
+        
+        README Content (First 2000 chars):
+        ${readme.substring(0, 2000)}
+      `;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          systemInstruction: `You are an expert technical writer. Your goal is to explain complex codebases to both developers and beginners. 
+          Generate a JSON response following this schema:
+          {
+            summary: "A clear, simple 2-3 sentence overview of what this project does.",
+            keyFeatures: ["List 3-5 main features"],
+            techStack: ["List detected languages, frameworks, and libraries"],
+            beginnerExplanation: "A very simple, beginner-friendly explanation of why someone would use this."
+          }`,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              summary: { type: Type.STRING },
+              keyFeatures: { 
+                type: Type.ARRAY, 
+                items: { type: Type.STRING } 
+              },
+              techStack: { 
+                type: Type.ARRAY, 
+                items: { type: Type.STRING } 
+              },
+              beginnerExplanation: { type: Type.STRING }
+            },
+            required: ["summary", "keyFeatures", "techStack", "beginnerExplanation"]
+          }
+        }
+      });
+
+      res.json(JSON.parse(response.text || "{}"));
+    } catch (error: any) {
+      console.error("AI Analysis error:", error);
+      res.status(500).json({ error: error.message || "Failed to analyze repository" });
     }
   });
 
