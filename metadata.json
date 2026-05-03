@@ -1,0 +1,6 @@
+{
+  "name": "GitHub Project Desplanner AI",
+  "description": "AI-powered assistant that transforms GitHub repositories into simple, human-readable summaries using Gemini API.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
