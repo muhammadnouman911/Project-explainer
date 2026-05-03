@@ -61,10 +61,16 @@ async function startServer() {
   // AI Analysis Endpoint
   app.post("/api/analyze", async (req, res) => {
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
+      // Support single key or comma-separated list of keys
+      const keysEnv = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || "";
+      const apiKeys = keysEnv.split(',').map(k => k.trim()).filter(k => k.length > 0);
+
+      if (apiKeys.length === 0) {
         return res.status(500).json({ error: "API key is missing. Please provide a valid API key." });
       }
+
+      // Randomly select a key for load balancing
+      const apiKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
 
       const ai = new GoogleGenAI({ apiKey });
       const { repoName, description, readme } = req.body;
